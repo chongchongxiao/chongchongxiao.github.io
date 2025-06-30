@@ -19,12 +19,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"chongchongxiao.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.1","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="前情提要最近突发奇想，想要整理一下个人博客。作为一个程序猿还是需要有一点沉淀，也把我踩坑的历程记录下来吧。关于Github Pages和hexo的介绍我这里也就不赘述了，想了解的自行去看 Github Pages 和 Hexo 的文档吧。我的个人开发机是Ununtu系统，这里搭建hexo的环境，全部是在Ubunt上操作的，如果你也是用的Ubunt或者其他内核的Linux，希望可以帮到你。 创建gi">
+    <meta name="description" content="前情提要最近突发奇想，想要整理一下个人博客。作为一个程序猿还是需要有一点沉淀，也把我踩坑的历程记录下来吧。关于Github Pages和hexo的介绍我这里也就不赘述了，想了解的自行去看 Github Pages 和 Hexo 的文档吧。我的个人开发机是Ubuntu系统，搭建hexo的环境全部是在Ubuntu上操作的，如果你也是用的Ubuntu或者其他内核的Linux，希望可以帮到你。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="在Linux上使用 Github Pages 和 Hexo 搭建个人 blog">
 <meta property="og:url" content="https://chongchongxiao.github.io/2025/06/29/hexo-start/index.html">
 <meta property="og:site_name" content="冲冲">
-<meta property="og:description" content="前情提要最近突发奇想，想要整理一下个人博客。作为一个程序猿还是需要有一点沉淀，也把我踩坑的历程记录下来吧。关于Github Pages和hexo的介绍我这里也就不赘述了，想了解的自行去看 Github Pages 和 Hexo 的文档吧。我的个人开发机是Ununtu系统，这里搭建hexo的环境，全部是在Ubunt上操作的，如果你也是用的Ubunt或者其他内核的Linux，希望可以帮到你。 创建gi">
+<meta property="og:description" content="前情提要最近突发奇想，想要整理一下个人博客。作为一个程序猿还是需要有一点沉淀，也把我踩坑的历程记录下来吧。关于Github Pages和hexo的介绍我这里也就不赘述了，想了解的自行去看 Github Pages 和 Hexo 的文档吧。我的个人开发机是Ubuntu系统，搭建hexo的环境全部是在Ubuntu上操作的，如果你也是用的Ubuntu或者其他内核的Linux，希望可以帮到你。">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://chongchongxiao.github.io/2025/06/29/hexo-start/github.png">
 <meta property="og:image" content="https://chongchongxiao.github.io/2025/06/29/hexo-start/page.png">
@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://chongchongxiao.github.io/2025/06/29/hexo-start/next-config.png">
 <meta property="og:image" content="https://chongchongxiao.github.io/2025/06/29/hexo-start/hexo-new.png">
 <meta property="article:published_time" content="2025-06-29T03:08:15.000Z">
-<meta property="article:modified_time" content="2025-06-29T15:08:25.157Z">
+<meta property="article:modified_time" content="2025-06-30T13:37:36.152Z">
 <meta property="article:author" content="冲冲">
 <meta property="article:tag" content="Hexo">
 <meta property="article:tag" content="个人博客">
@@ -228,9 +228,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">Posted on</span>
-      
 
-      <time title="Created: 2025-06-29 11:08:15 / Modified: 23:08:25" itemprop="dateCreated datePublished" datetime="2025-06-29T11:08:15+08:00">2025-06-29</time>
+      <time title="Created: 2025-06-29 11:08:15" itemprop="dateCreated datePublished" datetime="2025-06-29T11:08:15+08:00">2025-06-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-30 21:37:36" itemprop="dateModified" datetime="2025-06-30T21:37:36+08:00">2025-06-30</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -255,7 +261,9 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="前情提要"><a href="#前情提要" class="headerlink" title="前情提要"></a>前情提要</h1><p>最近突发奇想，想要整理一下个人博客。作为一个程序猿还是需要有一点沉淀，也把我踩坑的历程记录下来吧。关于Github Pages和hexo的介绍我这里也就不赘述了，想了解的自行去看 <a target="_blank" rel="noopener" href="https://pages.github.com/">Github Pages</a> 和 <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/">Hexo</a> 的文档吧。<br>我的个人开发机是Ununtu系统，这里搭建hexo的环境，全部是在Ubunt上操作的，如果你也是用的Ubunt或者其他内核的Linux，希望可以帮到你。</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="前情提要"><a href="#前情提要" class="headerlink" title="前情提要"></a>前情提要</h1><p>最近突发奇想，想要整理一下个人博客。作为一个程序猿还是需要有一点沉淀，也把我踩坑的历程记录下来吧。关于Github Pages和hexo的介绍我这里也就不赘述了，想了解的自行去看 <a target="_blank" rel="noopener" href="https://pages.github.com/">Github Pages</a> 和 <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/">Hexo</a> 的文档吧。<br>我的个人开发机是Ubuntu系统，搭建hexo的环境全部是在Ubuntu上操作的，如果你也是用的Ubuntu或者其他内核的Linux，希望可以帮到你。</p>
+<span id="more"></span>
+
 <h1 id="创建github仓库"><a href="#创建github仓库" class="headerlink" title="创建github仓库"></a>创建github仓库</h1><p>正所谓免费的才是最香的，并且自己买服务器来搭建也并不轻松，所以就直接github的page功能来搞了。</p>
 <p>首先你要有一个github的账号，如果没有那么你就自己先去注册一个，至于怎么注册，这里不再赘述。有账号以后，首先新建一个仓库，这里重点关注两个选项一个，<strong>名称</strong> 和 <strong>可见属性</strong>。其他按需填写即可，不理解的话，就不用管，直接点击Create repository。</p>
 <ul>
