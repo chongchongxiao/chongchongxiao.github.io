@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"chongchongxiao.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.1","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="背景之前听说过shared_ptr性能差，最近在工作中遇到一个事情，才让我切实的感受到shared_ptr在某些场景下真的表现很一般。最近一次版本升级以后，发现整体性能下降了非常多，使用perf查看以后，发现多了非常多的原子操作，进一步排查后，问题最终定位到了是shared_ptr导致的。 经常写c++的人都知道shared_ptr的底层就是一个引用计数的方式，为了线程安全，引用计数的加减都采用原">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一次线上问题让我明白了shared_ptr不能随便用">
+<meta property="og:url" content="https://chongchongxiao.github.io/2025/07/12/work-shared-ptr/index.html">
+<meta property="og:site_name" content="冲冲">
+<meta property="og:description" content="背景之前听说过shared_ptr性能差，最近在工作中遇到一个事情，才让我切实的感受到shared_ptr在某些场景下真的表现很一般。最近一次版本升级以后，发现整体性能下降了非常多，使用perf查看以后，发现多了非常多的原子操作，进一步排查后，问题最终定位到了是shared_ptr导致的。 经常写c++的人都知道shared_ptr的底层就是一个引用计数的方式，为了线程安全，引用计数的加减都采用原">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://chongchongxiao.github.io/2025/07/12/work-shared-ptr/top.png">
+<meta property="og:image" content="https://chongchongxiao.github.io/2025/07/12/work-shared-ptr/perf.png">
+<meta property="article:published_time" content="2025-07-12T13:37:28.000Z">
+<meta property="article:modified_time" content="2025-07-12T14:02:51.193Z">
+<meta property="article:author" content="冲冲">
+<meta property="article:tag" content="blog,学习,冲冲">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://chongchongxiao.github.io/2025/07/12/work-shared-ptr/top.png">
+
+
+<link rel="canonical" href="https://chongchongxiao.github.io/2025/07/12/work-shared-ptr/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"https://chongchongxiao.github.io/2025/07/12/work-shared-ptr/","path":"2025/07/12/work-shared-ptr/","title":"一次线上问题让我明白了shared_ptr不能随便用"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>一次线上问题让我明白了shared_ptr不能随便用 | 冲冲</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">冲冲</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">冲冲的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%A4%8D%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">问题复现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E6%94%B9%E8%BF%9B%EF%BC%9A%E5%87%8F%E5%B0%91%E7%AB%9E%E4%BA%89"><span class="nav-number">3.</span> <span class="nav-text">第一次改进：减少竞争</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E6%94%B9%E8%BF%9B%EF%BC%9A%E4%BD%BF%E7%94%A8%E8%A3%B8%E6%8C%87%E9%92%88"><span class="nav-number">4.</span> <span class="nav-text">第二次改进：使用裸指针</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="冲冲"
+      src="/images/self-icon.jpg">
+  <p class="site-author-name" itemprop="name">冲冲</p>
+  <div class="site-description" itemprop="description">不奢望可以走多高多远，一直在路上就好</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/chongchongxiao" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;chongchongxiao" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/lichong_caven@163.com" title="E-Mail → lichong_caven@163.com" rel="noopener me"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://chongchongxiao.github.io/2025/07/12/work-shared-ptr/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/self-icon.jpg">
+      <meta itemprop="name" content="冲冲">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="冲冲">
+      <meta itemprop="description" content="不奢望可以走多高多远，一直在路上就好">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="一次线上问题让我明白了shared_ptr不能随便用 | 冲冲">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一次线上问题让我明白了shared_ptr不能随便用
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2025-07-12 21:37:28 / Modified: 22:02:51" itemprop="dateCreated datePublished" datetime="2025-07-12T21:37:28+08:00">2025-07-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>之前听说过<code>shared_ptr</code>性能差，最近在工作中遇到一个事情，才让我切实的感受到<code>shared_ptr</code>在某些场景下真的表现很一般。最近一次版本升级以后，发现整体性能下降了非常多，使用perf查看以后，发现多了非常多的原子操作，进一步排查后，问题最终定位到了是<code>shared_ptr</code>导致的。</p>
+<p>经常写c++的人都知道<code>shared_ptr</code>的底层就是一个引用计数的方式，为了线程安全，引用计数的加减都采用原子操作，而原子操作本身相对来说就是一个开销比较大的操作，尤其在存在比较大的并发竞争的情况下，而导致这次性能下降的问题就是因为这个原子操作。场景其实很简单，就是创建一个全局变量，全局变量通过某个函数使用<code>shared_ptr</code>来返回，然后有非常多的线程去调用这个函数去获取这个全局变量，因为操作很频繁，所以这个函调调用频率也非常高，也就导致这个问题。其实问题原因还是比较清晰的，写这篇文章最主要的目的还是警醒一下自己，如果恰好对看到的人也有帮助，那就再好不过了。</p>
+<p>早就听闻<code>shared_ptr</code>存在性能短板，但直到最近一次工作中的亲身经历，我才真切体会到它在特定场景下的糟糕表现。最近线上一次版本升级后，系统整体性能出现了大幅下跌。通过<code>perf</code>工具排查发现，新增的大量原子操作是罪魁祸首，而顺藤摸瓜追踪下去，最终的矛头指向了<code>shared_ptr</code>。​<br>熟悉 C++ 的开发者都清楚，<code>shared_ptr</code>的底层依赖引用计数机制实现内存管理。为了保证线程安全，其引用计数的增减操作采用了原子操作。然而，原子操作本身就存在较高的性能开销，在高并发场景下，这种开销会被急剧放大。这次性能衰退的根源正在于此：我们的业务场景中存在一个全局变量，通过某个函数以shared_ptr的形式返回，而大量线程会高频调用该函数获取此全局变量。写下这篇文章，既是对自己的警醒，也希望能为其他开发者提供一些参考。</p>
+<span id="more"></span>
+
+<h1 id="问题复现"><a href="#问题复现" class="headerlink" title="问题复现"></a>问题复现</h1><p>为了精准定位问题，我搭建了模拟环境进行测试。首先定义一个<code>shared_ptr</code>类型的全局变量，然后让 32 个线程同时调用函数获取该变量，每个线程执行 1 亿次获取操作，并记录总耗时。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">MyStruct</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">MyStruct</span>(<span class="type">int</span> aa, <span class="type">int</span> bb) : <span class="built_in">a</span>(aa), <span class="built_in">b</span>(bb) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> a;</span><br><span class="line">    <span class="type">int</span> b;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">std::shared_ptr&lt;MyStruct&gt; gObject = std::<span class="built_in">make_shared</span>&lt;MyStruct&gt;(<span class="number">10</span>, <span class="number">20</span>);</span><br><span class="line"></span><br><span class="line"><span class="function">std::shared_ptr&lt;MyStruct&gt; <span class="title">GetCommonStruct</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> gObject;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">ThreadFunc</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10&#x27;000&#x27;000</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        std::shared_ptr&lt;MyStruct&gt; obj = <span class="built_in">GetCommonStruct</span>();</span><br><span class="line">    &#125;    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> num = <span class="number">32</span>;</span><br><span class="line">    std::vector&lt;std::thread&gt; threads;</span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">32</span>; ++i)</span><br><span class="line">    &#123;</span><br><span class="line">        threads.<span class="built_in">emplace_back</span>(ThreadFunc);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; t : threads)</span><br><span class="line">    &#123;</span><br><span class="line">        t.<span class="built_in">join</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> end = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">auto</span> duration = std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::milliseconds&gt;(end - start);</span><br><span class="line">    std::cout &lt;&lt; duration.<span class="built_in">count</span>() &lt;&lt; std::endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行结果显示，32 个 CPU 全部跑满，从perf的分析结果能清晰看到，大部分资源都消耗在了原子操作上，最终耗时高达<strong>353,479ms</strong>。</p>
+<p><img src="/2025/07/12/work-shared-ptr/top.png"></p>
+<p><img src="/2025/07/12/work-shared-ptr/perf.png"></p>
+<h1 id="第一次改进：减少竞争"><a href="#第一次改进：减少竞争" class="headerlink" title="第一次改进：减少竞争"></a>第一次改进：减少竞争</h1><p>既然多个线程争抢同一个<code>shared_ptr</code>会引发激烈的原子操作竞争，那尝试让每个线程获取不同的<code>shared_ptr</code>对象会有什么效果呢？基于这个思路，我对代码做了如下修改：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">MyStruct</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">MyStruct</span>(<span class="type">int</span> aa, <span class="type">int</span> bb) : <span class="built_in">a</span>(aa), <span class="built_in">b</span>(bb) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> a;</span><br><span class="line">    <span class="type">int</span> b;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">std::vector&lt;std::shared_ptr&lt;MyStruct&gt;&gt; gObjects;</span><br><span class="line"></span><br><span class="line"><span class="function">std::shared_ptr&lt;MyStruct&gt; <span class="title">GetCommonStruct</span><span class="params">(<span class="type">int</span> id)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> gObjects[id];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">ThreadFunc</span><span class="params">(<span class="type">int</span> id)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100&#x27;000&#x27;000</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        std::shared_ptr&lt;MyStruct&gt; obj = <span class="built_in">GetCommonStruct</span>(id);</span><br><span class="line">    &#125;    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> num = <span class="number">32</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; num; ++i)</span><br><span class="line">    &#123;</span><br><span class="line">        gObjects.<span class="built_in">emplace_back</span>(std::<span class="built_in">make_shared</span>&lt;MyStruct&gt;(i, i*i));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::vector&lt;std::thread&gt; threads;</span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">32</span>; ++i)</span><br><span class="line">    &#123;</span><br><span class="line">        threads.<span class="built_in">emplace_back</span>(ThreadFunc, i);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; t : threads)</span><br><span class="line">    &#123;</span><br><span class="line">        t.<span class="built_in">join</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> end = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">auto</span> duration = std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::milliseconds&gt;(end - start);</span><br><span class="line">    std::cout &lt;&lt; duration.<span class="built_in">count</span>() &lt;&lt; std::endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行时同样是 32 个 CPU 核心跑满，但最终耗时降至<strong>60,176ms</strong>，性能提升了数倍。这一结果印证了线程间对<code>shared_ptr</code>的竞争是导致性能瓶颈的关键因素。</p>
+<h1 id="第二次改进：使用裸指针"><a href="#第二次改进：使用裸指针" class="headerlink" title="第二次改进：使用裸指针"></a>第二次改进：使用裸指针</h1><p>不过，为每个线程分配独立对象的方案并不符合实际业务场景，我们仍需要一个全局对象供所有线程共享使用。这时我想到了返回裸指针的方式：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">MyStruct</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">MyStruct</span>(<span class="type">int</span> aa, <span class="type">int</span> bb) : <span class="built_in">a</span>(aa), <span class="built_in">b</span>(bb) &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> a;</span><br><span class="line">    <span class="type">int</span> b;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这里其实可以使用std::unique_ptr</span></span><br><span class="line">std::shared_ptr&lt;MyStruct&gt; gObject = std::<span class="built_in">make_shared</span>&lt;MyStruct&gt;(<span class="number">10</span>, <span class="number">20</span>);</span><br><span class="line"></span><br><span class="line"><span class="function">MyStruct* <span class="title">GetCommonStruct</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> gObject.<span class="built_in">get</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">ThreadFunc</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100&#x27;000&#x27;000</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        MyStruct* obj = <span class="built_in">GetCommonStruct</span>();</span><br><span class="line">    &#125;    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> num = <span class="number">32</span>;</span><br><span class="line">    std::vector&lt;std::thread&gt; threads;</span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">32</span>; ++i)</span><br><span class="line">    &#123;</span><br><span class="line">        threads.<span class="built_in">emplace_back</span>(ThreadFunc);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; t : threads)</span><br><span class="line">    &#123;</span><br><span class="line">        t.<span class="built_in">join</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> end = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">    <span class="keyword">auto</span> duration = std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::milliseconds&gt;(end - start);</span><br><span class="line">    std::cout &lt;&lt; duration.<span class="built_in">count</span>() &lt;&lt; std::endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这次的运行结果令人震惊，耗时仅为<strong>412ms</strong>。如此悬殊的性能差距，让我深刻感受到了<code>shared_ptr</code>对性能的巨大影响。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>在高频获取对象或高并发获取对象的场景中，<code>shared_ptr</code>绝非理想之选，它会导致程序性能严重下滑。​<br>不可否认，<code>shared_ptr</code>是 C++ 中极具价值的特性之一。它在众多场景下有效避免了内存泄漏，简化了编程过程中的内存管理。但我们必须清醒地认识到，<code>shared_ptr</code>是一把双刃剑，若用在不合适的场景，反而会成为沉重的负担。只有根据具体业务场景合理选择，才能充分发挥其优势，规避其弊端。​</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/06/29/hexo-start/" rel="prev" title="在Linux上使用 Github Pages 和 Hexo 搭建个人 blog">
+                  <i class="fa fa-angle-left"></i> 在Linux上使用 Github Pages 和 Hexo 搭建个人 blog
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">冲冲</span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>
