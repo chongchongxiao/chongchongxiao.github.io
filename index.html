@@ -141,18 +141,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-count">3</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-count">3</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -177,6 +177,105 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://chongchongxiao.github.io/2025/08/17/raft/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/self-icon.jpg">
+      <meta itemprop="name" content="冲冲">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="冲冲">
+      <meta itemprop="description" content="不奢望可以走多高多远，一直在路上就好">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 冲冲">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/08/17/raft/" class="post-title-link" itemprop="url">从Paxos到Raft：我是怎么搞懂分布式一致性协议的</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2025-08-17 13:02:17" itemprop="dateCreated datePublished" datetime="2025-08-17T13:02:17+08:00">2025-08-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-08-24 15:08:03" itemprop="dateModified" datetime="2025-08-24T15:08:03+08:00">2025-08-24</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">学习记录</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>最近对分布式一致性很感兴趣，其中“一致性”这个事儿最让我头疼——多台机器怎么才能保证数据一模一样？之前研究过Paxos，确实是一致性协议的“老祖宗”，但架不住它难啊：实现起来绕来绕去，还容易出现活锁（就是多个节点抢着提建议，谁也成不了事，卡在那儿了），实际项目里很少有人真的去手写Paxos，真正生产环境使用的都是raft协议。</p>
+<p>Raft论文里有个小标题特别戳我——<strong>Designing for understandability</strong>（以可理解性为目标设计）。现在回头想，一个算法好不好，效率、安全性当然重要，但能不能被大家用起来<strong>好懂</strong>、<strong>好实现</strong>才是关键。就像Paxos，理论很牛，但光是多个提议者抢编号就搞出两步流程：先确定谁能拿编号，再用编号提建议，步骤繁琐还容易出问题；而Raft直接把<strong>提议者</strong>身份固定了——整个集群里只需要一个<strong>领导者（Leader）</strong>，所有请求都让Leader来发起，一下子就把复杂度降下来了。</p>
+<p>也正是因为有了<strong>固定Leader</strong>这个核心设计，Raft把分布式一致性拆成了三个独立的小问题，每个问题解决一部分，合起来就覆盖了全部场景：</p>
+<ul>
+<li><strong>Leader选举</strong>：集群里没Leader了，或者Leader挂了，得赶紧选个新的出来；</li>
+<li><strong>日志复制</strong>：Leader收到客户端请求后，把日志存好，再同步给所有跟随者（Follower），还得强制Follower跟自己的日志保持一致；</li>
+<li><strong>安全性</strong>：保证所有节点的状态机“不打架”——如果一个节点执行了某条日志，其他节点绝不会在同一个位置执行另一条不同的日志。</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/08/17/raft/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -214,9 +313,24 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">Posted on</span>
-      
 
-      <time title="Created: 2025-07-12 21:37:28 / Modified: 22:06:24" itemprop="dateCreated datePublished" datetime="2025-07-12T21:37:28+08:00">2025-07-12</time>
+      <time title="Created: 2025-07-12 21:37:28" itemprop="dateCreated datePublished" datetime="2025-07-12T21:37:28+08:00">2025-07-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-08-17 13:03:12" itemprop="dateModified" datetime="2025-08-17T13:03:12+08:00">2025-08-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%B7%A5%E4%BD%9C%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">工作记录</span></a>
+        </span>
     </span>
 
   
