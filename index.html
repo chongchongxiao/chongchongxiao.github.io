@@ -141,7 +141,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-count">4</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -152,7 +152,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -177,6 +177,104 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://chongchongxiao.github.io/2025/09/08/fluss-column-prune/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/self-icon.jpg">
+      <meta itemprop="name" content="冲冲">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="冲冲">
+      <meta itemprop="description" content="不奢望可以走多高多远，一直在路上就好">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | 冲冲">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/09/08/fluss-column-prune/" class="post-title-link" itemprop="url">Apache Fluss 列裁剪功能调研笔记</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2025-09-08 08:59:12" itemprop="dateCreated datePublished" datetime="2025-09-08T08:59:12+08:00">2025-09-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-09-21 21:00:46" itemprop="dateModified" datetime="2025-09-21T21:00:46+08:00">2025-09-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/" itemprop="url" rel="index"><span itemprop="name">学习记录</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>最近因工作需要调研开源不久的Apache Fluss，初步看了它的核心特性后，列裁剪功能让我很感兴趣——毕竟大数据场景下<strong>读更少的数据</strong>是提升查询效率的关键。官方文档对这块的介绍比较简略，所以我结合源码和自定义Demo做了深入研究，整理成这份笔记。</p>
+<h1 id="一、调研背景与列裁剪的核心价值"><a href="#一、调研背景与列裁剪的核心价值" class="headerlink" title="一、调研背景与列裁剪的核心价值"></a>一、调研背景与列裁剪的核心价值</h1><p>在传统的流式消费场景中，如果某个topic有很多列，而客户端实际只需要一部分列的信息，往往都需要消费完整的数据，然后再客户端进行列筛选，如果需要的列占比比较少，那其实这会造成非常大的网络IO的浪费。</p>
+<p>Fluss的列裁剪正好解决这个问题，核心价值有两点：</p>
+<ol>
+<li><strong>减少I&#x2F;O开销</strong>：只读取需要的列，无关列完全跳过，尤其宽表场景下数据量减少非常明显；</li>
+<li><strong>无需解压即可裁剪</strong>：依赖Arrow列存的单列压缩特性，裁剪时不用解压整批数据，服务端处理效率大幅提升。</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/09/08/fluss-column-prune/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
