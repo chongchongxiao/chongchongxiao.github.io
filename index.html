@@ -222,7 +222,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-23 01:10:33" itemprop="dateModified" datetime="2025-12-23T01:10:33+08:00">2025-12-23</time>
+      <time title="Modified: 2025-12-27 14:44:58" itemprop="dateModified" datetime="2025-12-27T14:44:58+08:00">2025-12-27</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -244,7 +244,7 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>在大规模分布式系统中，单节点硬件故障属于高频场景。为保障服务可用性，通常会部署故障检测机制：一旦发现节点故障，立即将其从集群中剔除，并将该节点上的任务迁移至其他正常节点。然而，在近期的业务实践中，我们遇到了一个异常现象：每当硬件故障触发节点下线时，就会有客户端的任务持续卡住约15分钟才能恢复，即便服务端的任务迁移与服务恢复在分钟级内已完成。经过多轮排查，最终定位到根因是HTTP2协议场景下触发了TCP重传机制，导致客户端陷入长时间等待。</p>
+          <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>在大规模分布式系统中，单节点硬件故障属于高频场景。为保障服务可用性，通常会部署故障检测机制：一旦发现节点故障，立即将其从集群中剔除，并将该节点上的任务迁移至其他正常节点。然而，在近期的业务实践中，我们遇到了一个异常现象：每当硬件故障触发节点下线时，客户端任务会持续卡住约15分钟才能恢复，即便服务端的任务迁移与服务恢复在分钟级内已完成。经过多轮排查，最终定位到根因是OkHttp的HTTP2协议实现存在缺陷，导致无法中断TCP重传，最终客户端陷入长时间等待。</p>
 <h1 id="问题复现"><a href="#问题复现" class="headerlink" title="问题复现"></a>问题复现</h1><p>本次问题的核心交互场景为：服务端与客户端基于HTTP2协议通信，客户端采用OkHttp框架（版本3.14.2）发起请求。故障的核心表现是<strong>网络黑洞</strong>——客户端向故障节点发送的所有报文均无任何响应（服务端节点因故障无法处理也无法返回响应）。为精准复现该场景，我们通过iptables命令模拟网络黑洞效果，即屏蔽服务端向客户端的所有回报数据包。</p>
           <!--noindex-->
             <div class="post-button">
